@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+
+from myOmni import MyOMNI
+import sys
+import socket
+
 handlers = {
         'a': 'getMainFreq',
         'b': 'getSubFreq',

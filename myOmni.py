@@ -269,102 +269,61 @@ class MyOMNI(object):
             swr = (1.0 + val) / (1.0 - val)
         return swr
 
-# This allows us to run this as a module or as a program
-#    Read this as if we are running this as a program run this block
-#    Skip it if not (as a included module)  
-handlers = {
-        'a': 'getMainFreq',
-        'b': 'getSubFreq',
-        'g': 'getAGCMode',
-        's': 'getStrength',
-        'v': 'getVolume',
-        'i': 'getPower',
-        'j': 'getATT',
-        'h': 'getSQL',
-}
-
-def getLevel():
-    omni.getStrength()
-    omni.getAGCMode()
-    omni.getVolume()
-    omni.getPower()
-    omni.getATT()
-    omni.getSQL()
-
-if __name__ == "__main__":
-    cr = '\r'
-    crlf = '\r\n'
-
-    try:
-        # If we have a socket creation error within the MyOMNI __init__ function
-        #    this will capture it.
-        print('Socket to be Created - 76')
-        omni = MyOMNI(hostname="k8hsq.no-ip.biz", port=50020)
-        #omni = MyOMNI()
-        print('Socket Created - 78')
-    except socket.error:
-        print ('Failed to create socket')
-        sys.exit(1)
-
-    while (True):
+    @debug
+    def getAll(self):
+        resp = None
         try:
-            z = input('Enter single letter message to send (Control-C to quit): '); 
-            msg = z
-            handler = handlers.get(z[0], None)
-            if handler != None:
-                ret_val = eval(f'omni.{handler}')()
-                print("##############\n%s => %s\n##############" % ( handler, ret_val ))
-            elif z[0] == 'l':
-                getLevel()
+            reply = self.transaction('*')
+            all_settings = {  chr(x[0]): x[1:]  for x in reply.split(b'\r') }
+            # The response is terminated by a null character, just remove it from the dictionary
+            all_settings.pop('\x00')
+        except Exception as e:
+            print("ERROR: getAll: %s" % str(e))
+
+        for field in all_settings:
+            print("    DEBUG: %s" % field)
+            if field == 'A':
+                # VFO A Freq.
+                all_settings[field] = struct.unpack(">I", all_settings[field])[0]
+            elif field == 'B':
+                # VFO B Freq.
+                all_settings[field] = struct.unpack(">I", all_settings[field])[0]
+            elif field ==  'C':
+                pass
+            elif field ==  'F':
+                pass
+            elif field ==  'G':
+                pass
+            elif field ==  'H':
+                # SQL
+                all_settings[field] = float(all_settings[field][0])/127.0
+            elif field ==  'I':
+                # Power
+                all_settings[field] = float(all_settings[field][0])/127.0
+            elif field ==  'J':
+                # ATT
+                all_settings[field] = (all_settings[field][0] - ord('0')) * 6
+            elif field ==  'K':
+                pass
+            elif field ==  'L':
+                pass
+            elif field ==  'M':
+                pass
+            elif field ==  'N':
+                pass
+            elif field ==  'P':
+                pass
+            elif field ==  'S':
+                pass
+            elif field ==  'T':
+                pass
+            elif field ==  'U':
+                # Volume
+                all_settings[field] = float(all_settings[field][0])/127.0
+            elif field ==  'V':
+                pass
+            elif field ==  'W':
+                pass
             else:
-                print('That command is not setup yet')
-        except KeyboardInterrupt:
-            print("\n")
-            sys.exit(0)
-        except TypeError:
-            print("The message doesn't take arguments")
-
-    sys.exit(0)
-
-    while (True):
-        try:
-            z = input('Enter single letter message to send (Control-C to quit): '); 
-            msg = z
-            print ('Trace 87 ' 'msg')
-        except KeyboardInterrupt:
-            sys.exit(0)
-    
-        try:
-            if msg == "a":
-                print ("Main Freq: %d Hz" % (omni.getMainFreq()))
-            elif msg == "b":
-                print ('Trace 95')
-                print ("94-Sub Freq: %d Hz" % (omni.getSubFreq()))
-                print ('Trace 97')
-#                print (omni.getSubFreq())
-#                nb = omni.sendQuery(msg)
-#                print("DB-Number of bytes sent: %s" % (nb))
-
-            elif msg == "g":
-                print ( "AGC Mode: %s" % (omni.getAGCMode()) )
-            else:
-                # Send the command
-                nb = omni.sendQuery(msg)
-                print ("Number of bytes sent: %s" % nb)
-
-                (data_len, reply) = omni.recv(1024)
-                # Diag stuff
-                print ("Diag - reply: %d" % data_len)
-                print ("Contents of reply: %s" % str(reply))
-                print
-      
-                # This looks like wonderful things to make functions for the MyOMNI class
-                # But I'm not sure of what they would be?  
-                values = struct.unpack(">I", bytearray(reply[1:5]))
-         
-                print ("Server reply : %s  %d\r\n" % ( reply[0:1], values[0]))
-                print ("*********************" + crlf + crlf)
-     
-        except:
-            print ('123',socket.error, msg)
-            continue
+                raise Exception('UnknownCMD_%s' % field)
+        return all_settings
