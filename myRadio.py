@@ -10,7 +10,11 @@ def getLevel(conn):
 class Radio(object):
     def __init__(self, hostname="k8hsq.no-ip.biz", port=50020):
         self.rig = MyOMNI(hostname=hostname, port=port)
+        all_settings = self.rig.getAll()
+
         self.vfoA = self.rig.getMainFreq()
+        vfoB
+
 
 
 

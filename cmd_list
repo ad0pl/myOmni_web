@@ -1,0 +1,178 @@
+Set/Get Main Freq
+  *A<d3 d2 d1 d0> <CR>
+  ?A <CR>
+Set/Get Sub Freq
+  *B<d3 d2 d1 d0><CR>
+  ?B <CR>
+Set/Get AGC Mode
+  *GX<CR>
+  ?G <CR>
+Set/Get Squelch
+  *H<d0><CR>
+  ?H <CR>
+Set/Get RFGain
+  *I<d0><CR>
+  ?I <CR>
+Set/Get Attenuator
+  *JX<CR>
+  ?J <CR>
+Set/Get NB, NR, AN
+  *K nb nr an <CR>
+  ?K <CR>
+Set/Get RIT/XIT
+  *L<d2><d1><d0><CR>
+  ?L <CR>
+Set/Get MODE
+  *M VFOA VFOB<CR>
+  ?M <CR>
+Set/Get Split State
+  *N <d0> <CR>
+  ?N
+Set/Get Passband Tuning
+  *P <d1 d0> <CR>
+  ?P <CR>
+####Get Mode Orion Form
+####  ?RMM <CR>
+Set Transmit On/Off
+  *T <d1> <d0> <CR>
+Set/Get AF
+  *U <d0> <CR>
+  ?U <CR>
+Set/Get DSP RX Filter
+  *W <d0> <CR>
+  ?W <CR>
+Get SUnit
+  ?S <CR>
+  ?F<CR>
+Set Audio Source
+  *C1A <d0> <CR>
+  ?C1A <CR>
+Set Keyloop On/Off
+  *C1B <d0> <CR>
+  ?C1B <CR>
+Get Ethernet Settings Query ONLY
+  ?T <CR>
+  # (reply[0:12], reply[12], ".".join([str(x) for x in struct.unpack("BBBB", reply[13:17])]), reply[17])
+  #    MAC Addr, RIP Routing, IP Address, Compression Level
+Set/Get CW Rise/Fall Time
+  *C1C <d0> <CR>
+  ?C1C <CR>
+Set/Get Mic Gain
+  *C1D <d0> <CR>
+  ?C1D <CR>
+Set/Get Line Gain
+  *C1E <d0> <CR>
+  ?C1E <CR>
+Set/Get Speech Processor
+  *C1F <d0> <CR>
+  ?C1F <CR>
+Set FM CTCSS Tone
+  *C1G <d0> <CR>
+  ?C1G <CR>
+Set/Get RX Equalizer
+  *C1H <d0> <CR>
+  ?C1H <CR>
+Set/Get TX Equalizer
+  *C1I <d0> <CR>
+  ?C1I <CR>
+Set/Get Transmit Roll Off
+  *C1J <d0> <CR> Range = 0.0x17- X
+  ?C1J <CR> 70Hz.300Hz
+Set/Get External T/R Delay
+  *C1K <d0> <CR>
+  ?C1K <CR>
+Set/Get Sidetone Frequency
+  *C1L <d0> <CR>
+  ?C1L <CR>
+Set/Get CW QSK Delay
+  *C1M <d0> <CR>
+  ?C1M <CR>
+Set/Get Transmitter Enable
+  *C1N <d0> <CR>
+  ?C1N <CR>
+Set/Get Sideband TX BW
+  *C1O <d0> <CR>
+  ?C1O
+Set/Get Auto Tuner
+  *C1P <d0> <CR>
+  ?C1P <CR>
+Set/Get Sidetone Volume
+  *C1Q <d0> <CR>
+  ?C1Q <CR>
+Set/Get SPOT Volume
+  *C1R <d0> <CR>
+  ?C1R <CR>
+Set/Get FSK Mark High/Low
+  *C1S <d0> <CR>
+  ?C1S <CR>
+Set/Get I-F Filter Selection
+  *C1T <d0> <CR>
+  ?C1T <CR>
+Set/Get I-F Filter Enable
+  *C1U <d0> <CR>
+  ?C1U <CR>
+Set/Get Antenna Selection
+  *C1V <d0> <CR>
+  ?C1V <CR>
+Set/Get Monitor
+  *C1W <d0> <CR>
+  ?C1W <CR>
+Set/Get Power
+  *C1X <d0> <CR>
+  ?C1X <CR>
+Set/Get SPOT
+  *C1Y <d0> <CR>
+  ?C1Y <CR>
+Set/Get PreAmp
+  *C1Z <d0> <CR>
+  ?C1Z <CR>
+Set TUNER
+  *C2A <CR> No parameters X
+Get TUNER
+  ?C2A <CR>
+Set/Get Split State
+  *C2B <d0> <CR>
+  ?C2B
+Set/Get VOXTRIP
+  *C2C <d0> <CR>
+  ?C2C <CR>
+Set/Get ANTI VOX
+  *C2D <d0> <CR>
+  ?C2D <CR>
+Set/Get VOX Hang
+  *C2E <d0> <CR>
+  ?C2E <CR>
+Set/Get CW Keyer Mode
+  *C2F <d0> <CR>
+  ?C2F <CR>
+Set/Get CW Weighting
+  *C2G <d0> <CR>
+  ?C2G <CR>
+Set/Get Manual Notch On/Off
+  *C2H <d0> <CR>
+  ?C2H <CR>
+Set/Get Manual Notch Center Frequency
+  *C2I <d0> <CR>
+  ?C2I <CR>
+Set/Get Manual Notch Width
+  *C2J <d0> <CR>
+  ?C2J<CR>
+Set CWChar to Transmit
+  *C2K X <CR> Ascii Character X
+Get CW Count
+  ?C2K <CR> CWK <d0> <CR>
+Set/Get Keyer Speed
+  *C2L <d0> <CR>
+  ?C2L <CR>
+Set/Get VOX ON/OFF
+  *C2M <d0> <CR>
+  ?C2M <CR>
+Set/Get DISPLAY ON/OFF
+  *C2N <d0> <CR>
+  ?C2N<CR>
+Set/Get Speaker MUTE
+  *C2O <d0> <CR> Range=”0”,”1” for X
+  ?C2O<CR> UnMute / Mute
+TRIP Gain
+  *C2P <d0> <CR>
+  ?C2P<CR>

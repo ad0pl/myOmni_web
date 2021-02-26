@@ -11,13 +11,55 @@ def debug(func):
     @functools.wraps(func)
     def wrapper_debug(*args, **kwargs):
         args_repr = [repr(a) for a in args[1:]]                  # 1
-        kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]  # 2
+        kwargs_repr = ["%s=%s" % (k, repr(v)) for k, v in kwargs.items()]  # 2
         signature = ", ".join(args_repr + kwargs_repr)           # 3
-        print(f"Calling {func.__name__}({signature})")
+        print("Calling %s(%s)"% (func.__name__, signature))
         value = func(*args, **kwargs)
-        print(f"{func.__name__!r} returned {value!r}")           # 4
+        print("%s returned %s" % (repr(func.__name__), repr(value)))           # 4
         return value
     return wrapper_debug
+
+class AGCMode(object):
+    def __init__(self, val):
+        self.val = None
+        if type(val) == type(0):
+            if val < 0:
+                raise Exception('BadMode')
+            elif val > 3:
+                raise Exception('BadMode')
+            self.val = val
+        elif type(val) == type('string'):
+            if val == 'AGC_FAST':
+                self.val = 3
+            elif val == 'AGC_MEDIUM':
+                self.val = 2
+            elif val == 'AGC_SLOW':
+                self.val = 1
+            elif val == 'AGC_OFF':
+                self.val = 0
+            elif val == '3':
+                self.val = 3
+            elif val == '2':
+                self.val = 2
+            elif val == '1':
+                self.val = 1
+            elif val == '0':
+                self.val = 0
+            else:
+                raise Exception('BadMode')
+        else:
+            raise Exception('BadType')
+    def __str__(self):
+        mode = "AGC_OFF"
+        if self.val == 3:
+            mode = "AGC_FAST"
+        elif self.val == 2:
+            mode = "AGC_MEDIUM"
+        elif self.val == 1:
+            mode = "AGC_SLOW"
+        return mode
+    def __int__(self):
+        return self.val
 
 class MyOMNI(object):
     """This class is to communicate with the OMNI across the network
@@ -112,19 +154,8 @@ class MyOMNI(object):
             if resp_cmd != 'G':
                 raise Exception("BadResponse")
 
-            lvlbuf = int( chr( reply[1] ) )
-            if lvlbuf > 3:
-                raise Exception("BadResponse")
-            elif lvlbuf > 2:    # levlbuf == 3
-                mode = "AGC_FAST"
-            elif lvlbuf > 1:    # levlbuf == 2
-                mode = "AGC_MEDIUM"
-            elif lvlbuf > 0:    # levlbuf == 1
-                mode = "AGC_SLOW"
-            elif lvlbuf == 0:    # levlbuf == 0
-                mode = "AGC_OFF"
-            else:
-                raise Exception("BadResponseBadAGC")
+            lvlbuf = AGCMode( chr( reply[1] ) )
+            mode = str(lvlbuf)
         except Exception("BadResponse"):
             pass
         except Exception as e:
@@ -170,9 +201,9 @@ class MyOMNI(object):
 
                 s_meter = (lvlbuf[0] * 10) + lvlbuf[1] # int(reply[1:3].decode())
                 db_over = (lvlbuf[2] * 10) + lvlbuf[3] # int(reply[3:5].decode())
-                print(f'  DEBUG: {db_over} over S{s_meter}')
+                print('  DEBUG: %s over S%s' % (db_over, s_meter))
                 db_s9_rel = (s_meter - 9) * 6 # convert S meter to dBS9 relative
-                print(f'  DEBUG: db relative to S9: {db_s9_rel}')
+                print('  DEBUG: db relative to S9: %s', db_s9_rel)
         except Exception as e:
             print("ERROR: getStrength: %s" % str(e))
         return(None)
