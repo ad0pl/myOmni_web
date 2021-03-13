@@ -1,4 +1,7 @@
 from myOmni import MyOMNI
+from cmd2field import cmd2field
+from field2cmd import field2cmd
+
 def getLevel(conn):
     conn.getStrength()
     conn.getAGCMode()

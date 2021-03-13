@@ -20,15 +20,19 @@ def debug(func):
     return wrapper_debug
 
 class AGCMode(object):
+    """
+    It's easier to set the AGCMode as it's own datatype so that
+    it can be handled as a string or an integer however it needs to
+    """
     def __init__(self, val):
         self.val = None
-        if type(val) == type(0):
+        if type(val) == type(0):  # Type int
             if val < 0:
                 raise Exception('BadMode')
             elif val > 3:
                 raise Exception('BadMode')
             self.val = val
-        elif type(val) == type('string'):
+        elif type(val) == type('string'):  # Type string
             if val == 'AGC_FAST':
                 self.val = 3
             elif val == 'AGC_MEDIUM':
@@ -50,6 +54,7 @@ class AGCMode(object):
         else:
             raise Exception('BadType')
     def __str__(self):
+        """Converting the type to a string"""
         mode = "AGC_OFF"
         if self.val == 3:
             mode = "AGC_FAST"
@@ -59,6 +64,7 @@ class AGCMode(object):
             mode = "AGC_SLOW"
         return mode
     def __int__(self):
+        """Handling the type as an integer"""
         return self.val
 
 class MyOMNI(object):
@@ -125,8 +131,9 @@ class MyOMNI(object):
             if resp_cmd != VFO:
                 raise Exception("BadResponse")
             # Use the unpack to extract out all 4 bytes of the Integer for the frequency
-            freq     = struct.unpack(">I", bytearray(reply[1:5]))[0]
+            freq     = unpack_word(reply[1:5])
         except Exception("BadResponse"):
+            # If we get a bad response from the radio, just return nothing
             pass
         except Exception as e:
             print("ERROR:getFreq: %s" % str(e))
@@ -300,27 +307,44 @@ class MyOMNI(object):
             swr = (1.0 + val) / (1.0 - val)
         return swr
 
+    @staticmethod
+    def unpack_word(val):
+        return struct.unpack(">I", val)[0]
+
     @debug
     def getAll(self):
-        resp = None
+        resp = dict()
         try:
             reply = self.transaction('*')
-            all_settings = {  chr(x[0]): x[1:]  for x in reply.split(b'\r') }
-            # The response is terminated by a null character, just remove it from the dictionary
-            all_settings.pop('\x00')
+            for line in reply.split('\r'):
+                field = None
+                if line[0] == 0:
+                    # The sequence is terminated by a null character, skip it
+                    pass
+                elif chr( line[0] ) == 'C':
+                    # The fields that begin with a C are 3 characters in length
+                    field = line[0:3].decode()
+                    data = line[3:]
+                elif chr( line[0] ) == 'V':
+                    # There is a version string
+                    field = line[0:3].decode()
+                    data = line[0:-1] # Version string is Null terminated, we don't want the null
+                else:
+                    field = chr( line[0] )
+                    data = line[1:]
+                if field != None:
+                    resp[field] = data
+
         except Exception as e:
             print("ERROR: getAll: %s" % str(e))
 
-        for field in all_settings:
-            print("    DEBUG: %s" % field)
+        for field in resp:
             if field == 'A':
                 # VFO A Freq.
-                all_settings[field] = struct.unpack(">I", all_settings[field])[0]
+                resp[field] = unpack_word(all_settings[field])
             elif field == 'B':
                 # VFO B Freq.
-                all_settings[field] = struct.unpack(">I", all_settings[field])[0]
-            elif field ==  'C':
-                pass
+                resp[field] = unpack_word(all_settings[field])
             elif field ==  'F':
                 pass
             elif field ==  'G':
