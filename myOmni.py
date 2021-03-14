@@ -347,89 +347,104 @@ class MyOMNI(object):
             elif field ==  'W':
                 pass
             elif field == "C1A":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1B":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1C":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1D":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1E":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1F":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1G":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1H":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1I":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1J":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1K":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1L":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1M":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1N":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1O":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1P":
-                pass
+                if resp[field][0] == 1:
+                    resp[field] = True
+                else:
+                    resp[field] = False
             elif field == "C1Q":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1R":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1S":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1T":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1U":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1V":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1W":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1X":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1Y":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C1Z":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2A":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2B":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2C":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2D":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2E":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2F":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2G":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2H":
-                pass
+                if resp[field][0] == 1:
+                    resp[field] = True
+                else:
+                    resp[field] = False
             elif field == "C2I":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2J":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2K":
-                pass
+                resp[field] = resp[field][0]
             elif field == "C2L":
-                pass
+                resp[field] = int(resp[field][0]/2)
             elif field == "C2M":
-                pass
+                if resp[field][0] == 1:
+                    resp[field] = True
+                else:
+                    resp[field] = False
             elif field == "C2N":
-                pass
+                if resp[field][0] == 1:
+                    resp[field] = True
+                else:
+                    resp[field] = False
             elif field == "C2O":
-                pass
+                if resp[field][0] == 1:
+                    resp[field] = True
+                else:
+                    resp[field] = False
             elif field == "VER":
-                pass
+                resp[field] = resp[field].decode()
             else:
                 raise Exception('UnknownCMD_%s' % field)
         return resp
