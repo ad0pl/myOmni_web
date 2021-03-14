@@ -10,14 +10,30 @@ def debug(func):
     """Print the function signature and return value"""
     @functools.wraps(func)
     def wrapper_debug(*args, **kwargs):
-        args_repr = [repr(a) for a in args[1:]]                  # 1
-        kwargs_repr = ["%s=%s" % (k, repr(v)) for k, v in kwargs.items()]  # 2
-        signature = ", ".join(args_repr + kwargs_repr)           # 3
+        """Wrapper function around a function to print out what the arguments and return value of that function"""
+        args_repr = [repr(a) for a in args[1:]]                  # string list of all the non-key word arguments
+        kwargs_repr = ["%s=%s" % (k, repr(v)) for k, v in kwargs.items()]  # string list of all the keyword arguments
+        signature = ", ".join(args_repr + kwargs_repr)           # concat all the arguments
         print("Calling %s(%s)"% (func.__name__, signature))
         value = func(*args, **kwargs)
-        print("%s returned %s" % (repr(func.__name__), repr(value)))           # 4
-        return value
+        print("%s returned %s" % (repr(func.__name__), repr(value)))           # print out the return value of the function as a string
+        return value          # Make sure to return the value that the function returned
     return wrapper_debug
+
+def getValue(func):
+    @functools.wraps(func)
+    def wrapper_getValue(self, cmd):
+        resp = None
+        try:
+            reply = self.transaction(cmd, data=None)
+            resp_cmd = chr ( reply[0] )
+            if resp_cmd != cmd:
+                raise Exception('BadResponse')
+            resp = func(reply[1:])
+        except Exception as e:
+            print("ERROR: %s: %s: %s" % (cmd, repr(reply[1:]), str(e)))
+            raise e
+        return resp
 
 class AGCMode(object):
     """
@@ -109,34 +125,34 @@ class MyOMNI(object):
     def transaction(self, cmd, data=None):
         """Sends the Omni a query using the command cmd and reads back the response.
         """
+        reply = None
         msg = cmd
         if data != None:
             msg += data
         try:
             self.sendQuery(msg)
             data = self.recv()
+            if cmd[0] == 'C':
+                resp_cmd = data[0:3].decode()
+                reply = data[3:]
+            else:
+                resp_cmd = chr( data[0] )
+                reply = data[1:]
+            if resp_cmd != cmd:
+                raise Exception('BadResponse')
         except Exception as e:
-            print ('ERROR: %s' % (str(e)) )
-        return(data)
+            print ('ERROR: transaction: %s' % (str(e)) )
+        return(reply)
 
     @debug
     def getFreq(self, VFO):
         # Response will be <VFO>B1B2B3B4
         #   Where <VFO> will be the VFO queried
         #   B1B2B3B4 will be a 4 byte representation of the frequency
-        freq = None
-        try:
-            reply = self.transaction(VFO)
-            resp_cmd = chr( reply[0] )
-            if resp_cmd != VFO:
-                raise Exception("BadResponse")
+        freq = self.transaction(VFO)
+        if freq != None:
             # Use the unpack to extract out all 4 bytes of the Integer for the frequency
-            freq     = unpack_word(reply[1:5])
-        except Exception("BadResponse"):
-            # If we get a bad response from the radio, just return nothing
-            pass
-        except Exception as e:
-            print("ERROR:getFreq: %s" % str(e))
+            freq = self.unpack_word(freq[:-1])
         return freq
 
     @debug
@@ -153,44 +169,29 @@ class MyOMNI(object):
         0-3.  This matches for AGC to be off, slow, medium or fast
         """
         mode = None
-        try:
-            reply = self.transaction('G')
-            if len(reply) < 4:
-                raise Exception("SmallResponse")
-            resp_cmd = chr( reply[0] )
-            if resp_cmd != 'G':
-                raise Exception("BadResponse")
-
-            lvlbuf = AGCMode( chr( reply[1] ) )
-            mode = str(lvlbuf)
-        except Exception("BadResponse"):
-            pass
-        except Exception as e:
-            print("ERROR:getAGCMode: %s" % str(e))
+        reply = self.transaction('G')
+        if reply != None:
+            mode = AGCMode( chr( reply[0][0] ) )
         return(mode)
     
     @debug
     def getStrength(self):
         try:
             reply = self.transaction('S')
-            resp_cmd = chr( reply[0] )
-
-            if resp_cmd != 'S':
-                raise Exception("BadResponse")
 
             # top bit of of the 2nd byte will be set if TX
-            if (reply[1] & 0x80) == 0x80:
+            if (reply[0] & 0x80) == 0x80:
                 # If the rig is in TX the response should be
                 #   byte1 == foward power
                 #   byte2 == reflected power
                 print("  DEBUG:Transmitting")
-                swr = calc_swr(reply[1] & 0x7f, reply[2])
+                swr = calc_swr(reply[0] & 0x7f, reply[1])
 
-                if reply[2] > 0:
-                    reflected = reply[2] - 1
+                if reply[1] > 0:
+                    reflected = reply[1] - 1
                 else:
                     reflected = 0
-                strength = (reply[1] & 0x7f) - reflected # Transmit Power
+                strength = (reply[0] & 0x7f) - reflected # Transmit Power
                 print("  DEBUG: reflected:{reflected} strength: {strength}")
                 # convert watts to dbM
                 if strength > 0:
@@ -199,18 +200,18 @@ class MyOMNI(object):
                 else:
                     val = 0
                 print("  DEBUG: Strength: %duV" % val)
+                # FIXME - What do we return?
             else:
                 # Response for the receiving is in the form S0944 for 44 db over S9 in ASCII
                 print("  DEBUG:Receiving")
                 # Each byte is an ASCII character of a digit
-                #    NOTE: reply[1] => lvlbuf[0] 
-                lvlbuf = [ int( chr(x) ) for x in reply[1:5] ]
-
-                s_meter = (lvlbuf[0] * 10) + lvlbuf[1] # int(reply[1:3].decode())
-                db_over = (lvlbuf[2] * 10) + lvlbuf[3] # int(reply[3:5].decode())
+                # Convert the bytes to strings and cast to an integer
+                s_meter = int( reply[0:2].decode() )
+                db_over = int( reply[2:3].decode() )
                 print('  DEBUG: %s over S%s' % (db_over, s_meter))
                 db_s9_rel = (s_meter - 9) * 6 # convert S meter to dBS9 relative
                 print('  DEBUG: db relative to S9: %s', db_s9_rel)
+                # FIXME - What do we return?
         except Exception as e:
             print("ERROR: getStrength: %s" % str(e))
         return(None)
@@ -220,80 +221,45 @@ class MyOMNI(object):
         """Returns the AF setting
         """
         volume = 0
-        try:
-            reply = self.transaction('U')
-            resp_cmd = chr( reply[0] )
-
-            if resp_cmd != 'U':
-                raise Exception("BadResponse")
-
-            volume = float(reply[1])/127.0
-        except Exception as e:
-            print("ERROR: getStrength: %s" % str(e))
+        reply = self.transaction('U')
+        if reply != None:
+            volume = float(reply[0])/127.0
         return(volume)
 
     @debug
     def getPower(self):
         power = 0.0
-        try:
-            reply = self.transaction('I')
-            resp_cmd = chr( reply[0] )
-
-            if resp_cmd != 'I':
-                raise Exception("BadResponse")
-
-            power = float(reply[1])/127.0
-        except Exception as e:
-            print("ERROR: getStrength: %s" % str(e))
+        reply = self.transaction('I')
+        if reply != None:
+            power = float(reply[0])/127.0
         return(power)
 
     @debug
     def getATT(self):
         att = 0.0
-        try:
-            reply = self.transaction('J')
-            resp_cmd = chr( reply[0] )
-
-            if resp_cmd != 'J':
-                raise Exception("BadResponse")
-
+        reply = self.transaction('J')
+        if reply != None:
             # Response is an ascii 1, 2 or 3
             #   1 => 6
             #   2 => 12
             #   3 => 18
-            att = (reply[1]-ord('0')) * 6  # Turns out this is faster than casting int(chr(x))
-        except Exception as e:
-            print("ERROR: getStrength: %s" % str(e))
+            att = (reply[0]-ord('0')) * 6  # Turns out this is faster than casting int(chr(x))
         return(att)
 
     @debug
     def getSQL(self):
         sql = 0.0
-        try:
-            reply = self.transaction('H')
-            resp_cmd = chr( reply[0] )
-
-            if resp_cmd != 'H':
-                raise Exception("BadResponse")
-            sql = float(reply[1])/127.0
-        except Exception as e:
-            print("ERROR: getStrength: %s" % str(e))
+        reply = self.transaction('H')
+        if reply != None:
+            sql = float(reply[0])/127.0
         return(sql)
 
     @debug
     def getGeneric(self, cmd, data=None):
         resp = None
-        try:
-            reply = self.transaction(cmd, data=data)
-            resp_cmd = chr( reply[0] )
-            if resp_cmd != cmd:
-                raise Exception('BadResponse')
-            buffer_len = len(reply[1:])
-            print("RESPONSE: %s: %s" % ( resp_cmd, repr(reply[1:])))
-        except Exception("BadResponse"):
-            pass
-        except Exception as e:
-            print("ERROR:getGeneric: %s" % str(e))
+        reply = self.transaction(cmd, data=data)
+        print("RESPONSE: %s: %s" % ( resp_cmd, repr(reply)))
+
 
     @staticmethod
     def calc_swr(b1, b2):
@@ -315,8 +281,9 @@ class MyOMNI(object):
     def getAll(self):
         resp = dict()
         try:
-            reply = self.transaction('*')
-            for line in reply.split('\r'):
+            self.sendQuery('*')
+            reply = self.recv()
+            for line in reply.split(b'\r'):
                 field = None
                 if line[0] == 0:
                     # The sequence is terminated by a null character, skip it
@@ -341,23 +308,23 @@ class MyOMNI(object):
         for field in resp:
             if field == 'A':
                 # VFO A Freq.
-                resp[field] = unpack_word(all_settings[field])
+                resp[field] = self.unpack_word(resp[field])
             elif field == 'B':
                 # VFO B Freq.
-                resp[field] = unpack_word(all_settings[field])
+                resp[field] = self.unpack_word(resp[field])
             elif field ==  'F':
                 pass
             elif field ==  'G':
-                pass
+                resp[field] = AGCMode( chr(resp[field][0]) )
             elif field ==  'H':
                 # SQL
-                all_settings[field] = float(all_settings[field][0])/127.0
+                resp[field] = float(resp[field][0])/127.0
             elif field ==  'I':
                 # Power
-                all_settings[field] = float(all_settings[field][0])/127.0
+                resp[field] = float(resp[field][0])/127.0
             elif field ==  'J':
                 # ATT
-                all_settings[field] = (all_settings[field][0] - ord('0')) * 6
+                resp[field] = (resp[field][0] - ord('0')) * 6
             elif field ==  'K':
                 pass
             elif field ==  'L':
@@ -374,11 +341,95 @@ class MyOMNI(object):
                 pass
             elif field ==  'U':
                 # Volume
-                all_settings[field] = float(all_settings[field][0])/127.0
+                resp[field] = float(resp[field][0])/127.0
             elif field ==  'V':
                 pass
             elif field ==  'W':
                 pass
+            elif field == "C1A":
+                pass
+            elif field == "C1B":
+                pass
+            elif field == "C1C":
+                pass
+            elif field == "C1D":
+                pass
+            elif field == "C1E":
+                pass
+            elif field == "C1F":
+                pass
+            elif field == "C1G":
+                pass
+            elif field == "C1H":
+                pass
+            elif field == "C1I":
+                pass
+            elif field == "C1J":
+                pass
+            elif field == "C1K":
+                pass
+            elif field == "C1L":
+                pass
+            elif field == "C1M":
+                pass
+            elif field == "C1N":
+                pass
+            elif field == "C1O":
+                pass
+            elif field == "C1P":
+                pass
+            elif field == "C1Q":
+                pass
+            elif field == "C1R":
+                pass
+            elif field == "C1S":
+                pass
+            elif field == "C1T":
+                pass
+            elif field == "C1U":
+                pass
+            elif field == "C1V":
+                pass
+            elif field == "C1W":
+                pass
+            elif field == "C1X":
+                pass
+            elif field == "C1Y":
+                pass
+            elif field == "C1Z":
+                pass
+            elif field == "C2A":
+                pass
+            elif field == "C2B":
+                pass
+            elif field == "C2C":
+                pass
+            elif field == "C2D":
+                pass
+            elif field == "C2E":
+                pass
+            elif field == "C2F":
+                pass
+            elif field == "C2G":
+                pass
+            elif field == "C2H":
+                pass
+            elif field == "C2I":
+                pass
+            elif field == "C2J":
+                pass
+            elif field == "C2K":
+                pass
+            elif field == "C2L":
+                pass
+            elif field == "C2M":
+                pass
+            elif field == "C2N":
+                pass
+            elif field == "C2O":
+                pass
+            elif field == "VER":
+                pass
             else:
                 raise Exception('UnknownCMD_%s' % field)
-        return all_settings
+        return resp
