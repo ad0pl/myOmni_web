@@ -288,6 +288,9 @@ class MyOMNI(object):
                 if line[0] == 0:
                     # The sequence is terminated by a null character, skip it
                     pass
+                elif line[0] == 7:
+                    # This is odd that it just started showing up
+                    pass
                 elif chr( line[0] ) == 'C':
                     # The fields that begin with a C are 3 characters in length
                     field = line[0:3].decode()
@@ -446,5 +449,5 @@ class MyOMNI(object):
             elif field == "VER":
                 resp[field] = resp[field].decode()
             else:
-                raise Exception('UnknownCMD_%s' % field)
+                raise Exception('UnknownCMD_%s' % repr(field))
         return resp

@@ -21,6 +21,12 @@ class Radio(object):
             if all_settings.get(c, None) != None:
                 setattr(self, f, all_settings[c])
 
+    def updateSettings(self):
+        all_settings = self.rig.getAll()
+        for (f, c) in field2cmd.items():
+            if all_settings.get(c, None) != None:
+                setattr(self, f, all_settings[c])
+
 
 
 
