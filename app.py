@@ -7,6 +7,8 @@
 # This is an automatically generated file.
 # Manual changes will be overwritten without warning!
 
+# I really like this HTML format for a UI
+# https://github.com/Akkadius/glass-isc-dhcp
 import wx
 from RigControl import RigControl
 from example_timer import RepeatedTimer

@@ -1,8 +1,8 @@
 import socket   # for sockets
-import sys      # for exit
 import struct
 import functools
 import math
+from cmd2field import cmd2field
 
 # This is called a declarator, it gets called for any function that has the
 #    the @debug on the line prior to the function definition.
@@ -87,6 +87,8 @@ class MyOMNI(object):
     """This class is to communicate with the OMNI across the network
     The request/response was figured out from
     https://github.com/Hamlib/Hamlib/blob/master/rigs/tentec/omnivii.c
+    and
+    http://www.tentec.com/wp-content/uploads/2016/05/tt_588_program_ref_v1.009.pdf
     """
   # For python classes, the __init__ method/function is always called when a new
   #   Object is created
@@ -144,6 +146,50 @@ class MyOMNI(object):
             print ('ERROR: transaction: %s' % (str(e)) )
         return(reply)
 
+    @debug
+    def newRecv(self):
+        response = dict()
+        buffer = self.recv()
+        while len(buffer) > 0:
+            data_len = -1
+            field = None
+            if buffer[0] == 0:
+               # The sequence is terminated by a null character, skip it
+                buffer = buffer[1:]
+            elif chr( buffer[0] ) == 'C':
+                # The fields that begin with a C are 3 characters in length
+                field = buffer[0:3].decode()
+                data_start = 4
+                data_len = cmd2field[field].get('len', -1)
+            elif chr( buffer[0] ) == "V":
+                # Version string is kinda tricky since it's terminated by a null
+                field = buffer[0:3].decode()
+                # We will handle movement through the buffer so flag it to skip that part further down
+                data_start = 4
+                data_end = buffer.find(b'\x00')
+                data = buffer[ data_start:data_end ]
+                value = data.decode()
+                # move the buffer up past the null and past the field sep. ('\r')
+                buffer = buffer[data_end + 1 + 1:]
+            else:
+                field = chr( buffer[0] )
+                data_start = 1
+                data_len = cmd2field[field].get('len', -1)
+
+            if data_len > 0:
+                # Validate we are properly terminated
+                data_end   = data_start + data_len
+                if buffer[data_end] != ord('\r'):
+                    raise Exception('BadData')
+                data = buffer[ data_start:data_end ]
+                value = cmd2field[ field ]["unpack"]( data )
+                # Move to the next field
+                buffer = buffer[data_end+1:]
+            if field != None:
+                response[field] = value
+        return response
+
+    
     @debug
     def getFreq(self, VFO):
         # Response will be <VFO>B1B2B3B4
@@ -277,12 +323,51 @@ class MyOMNI(object):
     def unpack_word(val):
         return struct.unpack(">I", val)[0]
 
+    @staticmethod
+    def radioMode(val):
+        ret = None
+        if val == 0:
+            ret = "AM"
+        elif val == 1:
+           ret = "USB"
+        elif val == 2:
+            ret = "LSB"
+        elif val == 3:
+            ret = "CW"
+        elif val == 5:
+            ret = "CWR"
+        elif val == 4:
+            ret = "FM"
+        else:
+            raise Exception('BadeMode')
+        return ret
+
+    @staticmethod
+    def unpackMode(val):
+        vfoA_mode = radioMode( val[0] )
+        vfoB_mode = radioMode( val[1] )
+
+        return vfoA_mode, vfoB_mode
+
+    @debug
+    def getSettings(self):
+        response = dict()
+        all_settings = self.getAll()
+        for (c, value) in all_settings.items():
+            if cmd2field.get(c, None) != None:
+                f = cmd2field[c]
+                response[f] = value
+        return response
+
     @debug
     def getAll(self):
         resp = dict()
         try:
             self.sendQuery('*')
             reply = self.recv()
+            # FIXME: We need to figure a better way to parse through the response
+            #    There are responses that could very well map into a 13 which happens to be the separater
+            #    so splitting on the \r is a bad idea.  Works for now but this will have to be redone
             for line in reply.split(b'\r'):
                 field = None
                 if line[0] == 0:
@@ -302,6 +387,7 @@ class MyOMNI(object):
                 else:
                     field = chr( line[0] )
                     data = line[1:]
+
                 if field != None:
                     resp[field] = data
 
@@ -328,125 +414,129 @@ class MyOMNI(object):
             elif field ==  'J':
                 # ATT
                 resp[field] = (resp[field][0] - ord('0')) * 6
-            elif field ==  'K':
+            elif field ==  'K': # noise
                 pass
-            elif field ==  'L':
+            elif field ==  'L': # rit_xit
+                # resp[field] = self.unpack_rit_xit(resp[field])
                 pass
-            elif field ==  'M':
+            elif field ==  'M': # radio_mode
+                # resp[field] = self.unpackMode(resp[field])
                 pass
-            elif field ==  'N':
+            elif field ==  'N': # split_state
                 pass
-            elif field ==  'P':
+            elif field ==  'P': # passband
                 pass
-            elif field ==  'S':
+            elif field ==  'S': # Signal Strength
                 pass
-            elif field ==  'T':
+            elif field ==  'T': # xmit/eth_settings
                 pass
-            elif field ==  'U':
+            elif field ==  'U': # volume
                 # Volume
                 resp[field] = float(resp[field][0])/127.0
-            elif field ==  'V':
+            elif field ==  'V': 
                 pass
-            elif field ==  'W':
+            elif field ==  'W': # rx_filter
                 pass
-            elif field == "C1A":
+            elif field == "C1A": # audio_source
                 resp[field] = resp[field][0]
-            elif field == "C1B":
+            elif field == "C1B": # keyloop
                 resp[field] = resp[field][0]
-            elif field == "C1C":
+            elif field == "C1C": # cw_time
                 resp[field] = resp[field][0]
-            elif field == "C1D":
+            elif field == "C1D": # mic_gain
                 resp[field] = resp[field][0]
-            elif field == "C1E":
+            elif field == "C1E": # line_gain
                 resp[field] = resp[field][0]
-            elif field == "C1F":
+            elif field == "C1F": # speech_proc
                 resp[field] = resp[field][0]
-            elif field == "C1G":
+            elif field == "C1G": # ctcss_tone
                 resp[field] = resp[field][0]
-            elif field == "C1H":
+            elif field == "C1H": # rx_eq
                 resp[field] = resp[field][0]
-            elif field == "C1I":
+            elif field == "C1I": # tx_eq
                 resp[field] = resp[field][0]
-            elif field == "C1J":
+            elif field == "C1J": # xmit_rolloff
                 resp[field] = resp[field][0]
-            elif field == "C1K":
+            elif field == "C1K": # t_r_delay
                 resp[field] = resp[field][0]
-            elif field == "C1L":
+            elif field == "C1L": # sidetone_freq
                 resp[field] = resp[field][0]
-            elif field == "C1M":
+            elif field == "C1M": # cw_delay
                 resp[field] = resp[field][0]
-            elif field == "C1N":
+            elif field == "C1N": # xmit_enable
                 resp[field] = resp[field][0]
-            elif field == "C1O":
+            elif field == "C1O": # sideband_bw
                 resp[field] = resp[field][0]
-            elif field == "C1P":
+            elif field == "C1P": # auto_tuner
                 if resp[field][0] == 1:
                     resp[field] = True
                 else:
                     resp[field] = False
-            elif field == "C1Q":
+            elif field == "C1Q": # sidetone_vol
                 resp[field] = resp[field][0]
-            elif field == "C1R":
+            elif field == "C1R": # spot_vol
                 resp[field] = resp[field][0]
-            elif field == "C1S":
+            elif field == "C1S": # fsk_mark
                 resp[field] = resp[field][0]
-            elif field == "C1T":
+            elif field == "C1T": # if_filter
                 resp[field] = resp[field][0]
-            elif field == "C1U":
+            elif field == "C1U": # if_filter_enable
                 resp[field] = resp[field][0]
-            elif field == "C1V":
+            elif field == "C1V": # antenna
                 resp[field] = resp[field][0]
-            elif field == "C1W":
+            elif field == "C1W": # monitor
                 resp[field] = resp[field][0]
-            elif field == "C1X":
+            elif field == "C1X": # power
                 resp[field] = resp[field][0]
-            elif field == "C1Y":
+            elif field == "C1Y": # spot
                 resp[field] = resp[field][0]
-            elif field == "C1Z":
+            elif field == "C1Z": # preamp
                 resp[field] = resp[field][0]
-            elif field == "C2A":
+            elif field == "C2A": # tuner
                 resp[field] = resp[field][0]
-            elif field == "C2B":
+            elif field == "C2B": # split_state2
                 resp[field] = resp[field][0]
-            elif field == "C2C":
+            elif field == "C2C": # vox_trip
                 resp[field] = resp[field][0]
-            elif field == "C2D":
+            elif field == "C2D": # anti_vox
                 resp[field] = resp[field][0]
-            elif field == "C2E":
+            elif field == "C2E": # vox_hang
                 resp[field] = resp[field][0]
-            elif field == "C2F":
+            elif field == "C2F": # cw_keyer_mode
                 resp[field] = resp[field][0]
-            elif field == "C2G":
+            elif field == "C2G": # cw_weight
                 resp[field] = resp[field][0]
-            elif field == "C2H":
+            elif field == "C2H": # manual_notch
                 if resp[field][0] == 1:
                     resp[field] = True
                 else:
                     resp[field] = False
-            elif field == "C2I":
+            elif field == "C2I": # manual_notch_freq
                 resp[field] = resp[field][0]
-            elif field == "C2J":
+            elif field == "C2J": # manual_notch_width
                 resp[field] = resp[field][0]
-            elif field == "C2K":
+            elif field == "C2K": # cw_2_xmit
                 resp[field] = resp[field][0]
-            elif field == "C2L":
+            elif field == "C2L": # keyer_speed
                 resp[field] = int(resp[field][0]/2)
-            elif field == "C2M":
+            elif field == "C2M": # vox
                 if resp[field][0] == 1:
                     resp[field] = True
                 else:
                     resp[field] = False
-            elif field == "C2N":
+            elif field == "C2N": # display
                 if resp[field][0] == 1:
                     resp[field] = True
                 else:
                     resp[field] = False
-            elif field == "C2O":
+            elif field == "C2O": # speaker
                 if resp[field][0] == 1:
                     resp[field] = True
                 else:
                     resp[field] = False
-            elif field == "VER":
+            elif field == "C2P": # trip_gain
+                pass
+            elif field == "VER": # VERSION
                 resp[field] = resp[field].decode()
             else:
                 raise Exception('UnknownCMD_%s' % repr(field))
