@@ -9,6 +9,9 @@ __pycache__/
 # ignore the visual studio stuff
 .vs/
 
+*~
+x
+
 # Distribution / packaging
 .Python
 build/
