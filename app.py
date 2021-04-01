@@ -29,8 +29,8 @@ class MyApp(wx.App):
 def updatePanel():
     app.frame.vfoA.SetValue(str(rig.vfoA))
     app.frame.vfoB.SetValue(str(rig.vfoB))
-    app.frame.agc_mode.SetValue( str(rig.agc))
-    app.frame.af.SetValue( str(rig.volume))
+    app.frame.select_agc.SetValue( str(rig.agc))
+    app.frame.af_level.SetValue( str(rig.volume))
 
 
 

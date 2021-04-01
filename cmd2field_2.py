@@ -10,135 +10,217 @@ cmd2field = {
       "len": 4
       },
   "G": { 
-      "label": "agc"
+      "label": "agc",
+      "unpack": lambda x: AGCMode(x[0]-ord('0')),
+      "len": 1
       },
   "H": { 
-      "label": "sql"
+      "label": "sql",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "I": { 
-      "label": "rfgain"
+      "label": "rfgain",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "J": { 
-      "label": "att"
+      "label": "att",
+      "unpack": lambda x: (x[0]-ord('0'))*6,
+      "len": 1
       },
   "K": { 
-      "label": "noise"
+      "label": "noise",
+      "unpack": self.unpack_noise,
+      "len": 3
       },
   "L": {
-     "label": "rit_xit"
+     "label": "rit_xit",
+      "unpack": self.unpack_ritxit,
+      "len": 3
      },
   "M": { 
-      "label": "radio_mode"
+      "label": "radio_mode",
+      "unpack": self.unpackMode,
+      "len": 3
       },
   "N": { 
-      "label": "split_state"
+      "label": "split_state",
+      "unpack": lambda x: "Off" if x[0] == 0 else "On",
+      "len": 1
       },
   "P": { 
-      "label": "passband"
-      },
-  "T": { 
-      "label": "xmit"
+      "label": "passband",
+      "unpack": lambda x: struct.unpack("!H", x)[0],
+      "len": 2
       },
   "U": { 
-      "label": "volume"
+      "label": "volume",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "W": { 
-      "label": "rx_filter"
+      "label": "rx_filter",
+      "unpack": self.unpack_filter,
+      "len": 1
       },
   "S": { 
-      "label": "strength"
+      "label": "strength",
+      "unpack": self.unpack_signal,
+      "len": 4
       },
   "C1A": { 
-      "label": "audio_source"
+      "label": "audio_source",
+      "unpack": self.unpack_au_source,
+      "len": 1
       },
   "C1B": { 
-      "label": "keyloop"
+      "label": "keyloop",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "T": { 
-      "label": "eth_settings"
+      "label": "eth_settings",
+      "unpack": self.unpack_eth,
+      "len": 3
       },
   "C1C": { 
-      "label": "cw_time"
+      "label": "cw_time",
+      "unpack": lambda x: x[0] + 3,
+      "len": 1
       },
   "C1D": { 
-      "label": "mic_gain"
+      "label": "mic_gain",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1E": { 
-      "label": "line_gain"
+      "label": "line_gain",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1F": { 
-      "label": "speech_proc"
+      "label": "speech_proc",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1G": { 
-      "label": "ctcss_tone"
+      "label": "ctcss_tone" # Who's going to use this rig for FM?
       },
   "C1H": { 
-      "label": "rx_eq"
+      "label": "rx_eq",
+      "unpack": lambda x: int( (x[0]-1)/3.097560975 ) - 20,
+      "len": 1
       },
   "C1I": { 
-      "label": "tx_eq"
+      "label": "tx_eq",
+      "unpack": lambda x: int( (x[0]-1)/3.097560975 ) - 20,
+      "len": 1
       },
   "C1J": { 
-      "label": "xmit_rolloff"
+      "label": "xmit_rolloff",
+      "unpack": lambda x: (x[0] * 10) + 70,
+      "len": 1
       },
   "C1K": { 
-      "label": "t_r_delay"
+      "label": "t_r_delay",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1L": { 
-      "label": "sidetone_freq"
+      "label": "sidetone_freq",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1M": { 
-      "label": "cw_delay"
+      "label": "cw_delay",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1N": { 
-      "label": "xmit_enable"
+      "label": "xmit_enable",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C1O": { 
-      "label": "sideband_bw"
+      "label": "sideband_bw",
+      "unpack": lambda x: 2500 if x[0] == 8 else 4000-(x[0] * 200) if x[0] < 8 else 4000-((x[0]-1)*200),
+      "len": 1
       },
   "C1P": { 
-      "label": "auto_tuner"
+      "label": "auto_tuner",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C1Q": { 
-      "label": "sidetone_vol"
+      "label": "sidetone_vol",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1R": { 
-      "label": "spot_vol"
+      "label": "spot_vol",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1S": {
-     "label": "fsk_mark"
+     "label": "fsk_mark",
+      "unpack": lambda x: x[0],
+      "len": 1
      },
   "C1T": { 
-      "label": "if_filter"
+      "label": "if_filter",
+      "unpack": self.unpack_if,
+      "len": 1
       },
   "C1U": { 
-      "label": "if_filter_enable"
+      "label": "if_filter_enable",
+      "unpack": self.unpack_if_filter_enable,
+      "len": 1
       },
   "C1V": { 
-      "label": "antenna"
+      "label": "antenna",
+      "unpack": lambda x: x[0],
+      "len": 1
       },
   "C1W": { 
-      "label": "monitor"
+      "label": "monitor",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C1X": { 
-      "label": "power"},
+      "label": "power",
+      "unpack": lambda x: int( ((x[0]/127.0)*100)+0.5 ), # we can get the fwd/rev power from ?S, ignore it from here
+      "len": 3
+      },
   "C1Y": { 
-      "label": "spot"
+      "label": "spot",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C1Z": { 
-      "label": "preamp"
+      "label": "preamp",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C2A": { 
-      "label": "tuner"
+      "label": "tuner",
+      "unpack": self.unpack_tune_state,
+      "len": 1
       },
   "C2B": { 
-      "label": "split_state2"
+      "label": "split_state2",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C2C": { 
-      "label": "vox_trip"
+      "label": "vox_trip",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C2D": { 
-      "label": "anti_vox"
+      "label": "anti_vox",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C2E": { 
       "label": "vox_hang"

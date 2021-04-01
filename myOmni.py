@@ -324,30 +324,182 @@ class MyOMNI(object):
         return struct.unpack(">I", val)[0]
 
     @staticmethod
-    def radioMode(val):
-        ret = None
-        if val == 0:
-            ret = "AM"
-        elif val == 1:
-           ret = "USB"
-        elif val == 2:
-            ret = "LSB"
-        elif val == 3:
-            ret = "CW"
-        elif val == 5:
-            ret = "CWR"
-        elif val == 4:
-            ret = "FM"
+    def unpack_noise(val):
+        return { "nb": val[0], "nr": val[1], "an": val[2] }
+
+    @staticmethod
+    def unpack_ritxit(val):
+        ret = { "xit": 0, "rit": 0 }
+        if val[0] == 1:
+            ret["rit"] = (val[2] * 256) | val[3]
+        elif val[0] == 2:
+            ret["xit"] = (val[2] * 256) | val[3]
         else:
-            raise Exception('BadeMode')
+            x = (val[2] * 256) | val[3]
+            ret = { "xit": x, "rit": x }
         return ret
 
     @staticmethod
-    def unpackMode(val):
-        vfoA_mode = radioMode( val[0] )
-        vfoB_mode = radioMode( val[1] )
+    def radioMode(val):
+        modes = {
+            0: "AM",
+            1: "USB",
+            2: "LSB",
+            3: "CW",
+            5: "CWR",
+            4: "FM"
+        }
+        return modes.get(val, None)
 
-        return vfoA_mode, vfoB_mode
+    @staticmethod
+    def unpackMode(val):
+        ret = dict()
+        # val will be 2 bytes in length, each byte will be an integer but in ascii
+        # (x-ord('0') for x in val) => for each byte in val, convert char to integer
+        # zip( listA, listB ) => creates a new list interpolating elements from listA with listB 
+        for k,v in zip( ("vfoA_mode", "vfoB_mode"), (x-ord('0') for x in val) ):
+            # 'k' will either be vfoA_mode or vfoB_mode
+            # 'v' will be the integer value of either the first or second byte
+            # Lookup the coresponding mode for the value of the 'v' byte
+            mode = radioMode(v)
+            # Make sure it's a valid mode (i.e. a number between 0-5
+            if v == None:
+                raise Exception("BadMode")
+            ret[k] = mode
+        return ret
+
+    @staticmethod
+    def matchFilter(width):
+        filters = {
+            0: 12000,
+            1: 9000,
+            2: 8000,
+            3: 7500,
+            4: 7000,
+            5: 6500,
+            6: 6000,
+            7: 5500,
+            8: 5000,
+            9: 4500,
+            10: 4000,
+            11: 3800,
+            12: 3600,
+            13: 3400,
+            14: 3200,
+            15: 3000,
+            16: 2800,
+            17: 2600,
+            18: 2500,
+            19: 2400,
+            20: 2200,
+            21: 2000,
+            22: 1800,
+            23: 1600,
+            24: 1400,
+            25: 1200,
+            26: 1000,
+            27: 900,
+            28: 800,
+            29: 700,
+            30: 600,
+            31: 500,
+            32: 450,
+            33: 400,
+            34: 350,
+            35: 300,
+            36: 250,
+            37: 200
+        }
+        return filters.get(val, None)
+
+    @staticmethod
+    def unpack_filter(val):
+        filter = matchFilter(val[0])
+        if filter == None:
+            raise Exception('BadFilter')
+        return filter
+
+    @staticmethod
+    def unpack_eth(val):
+        # b'001945001602\x00\xc0\xa8\x01'
+        # MAC Address, 
+        # RIP In Progress, 
+        # RIP IP, 
+        # Compression Level Supported
+        mac_addr          = val[0:12].decode()
+        rip_in_use        = val[12]
+        rip_ip            = socket.inet_ntoa(val[13:17])
+        compression_level = val[17]
+        return { 'mac': mac_addr, 'rip': rip_in_use, 'ip': rip_ip, 'compression': compression_level }
+
+    @staticmethod
+    def matchAudioSource(val):
+        source = {
+            0: "MIC",
+            1: "LINE",
+            2: "BOTH"
+         }
+        return source.get(val, None)
+
+    @staticmethod
+    def unpack_au_source(val):
+        source = matchAudioSource(val[0])
+        if source == None:
+            raise Exception('BadSource')
+        return source
+    @staticmethod
+    def unpack_signal(val):
+        ret = dict()
+        if val[0] & 0x80 == 0x80:
+            # Transmitting
+            fwd = val[0] & 0x7f
+            rev = val[1]
+            ret['swr'] = calc_swr(fwd, rev)
+
+            strength = fwd - rev
+            dbW = (10 * int(math.log10(strength))) + 30
+            ret['dbm'] = dbW + 73
+        else:
+            # Receiving
+            s_meter = int( reply[0:2].decode() )
+            db_over = int( reply[2:3].decode() )
+            ret['dbS9rel'] = (s_meter - 9) * 6 # convert S meter to dBS9 relative
+        return ret
+
+    @staticmethod
+    def unpack_if(val):
+        if_sel = {
+            0: "20kHz",
+            1: "6kH",
+            2: "2.5kHz",
+            3: "500H",
+            4: "300Hz"
+         }
+        return if_sel.get(val[0], "Auto")
+
+    @staticmethod
+    def unpack_if_filter_enable(val):
+        ret = {"300": False, "500": False}
+        if val[0] & 0x01 == 0x01:
+            ret["300"] = True
+        if val[0] & 0x02 == 0x02:
+            ret["500"] = True
+        return ret
+
+    @staticmethod
+    def unpack_tune_state(val):
+        ret = { 
+            "enabled": False,
+            "tuning": False,
+            "tuned": False
+         }
+        if val[0] & 0x01 == 0x01:
+            ret['enabled'] = True
+        if val[0] & 0x02 == 0x02:
+            ret['tuning'] = True
+        if val[0] & 0x04 == 0x04:
+            ret['tuned'] = True
+        return ret
 
     @debug
     def getSettings(self):

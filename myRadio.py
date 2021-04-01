@@ -27,7 +27,11 @@ class Radio(object):
         # RIP In Progress, 
         # RIP IP, 
         # Compression Level Supported
-        mac_addr = self.rig.eth_settings[0:11].decode()
+        mac_addr          = self.rig.eth_settings[0:12].decode()
+        rip_in_use        = self.rig.eth_settings[12]
+        rip_ip            = socket.inet_ntoa(self.rig.eth_settings[13:17])
+        compression_level = self.rig.eth_settings[17]
+        return { 'mac': mac_addr, 'rip': rip_in_use, 'ip': rip_ip, 'compression': compression_level }
 
     def updateSettings(self):
         all_settings = self.rig.getSettings()
@@ -37,6 +41,8 @@ class Radio(object):
                     mode_a, mode_b = self.rig.unpackMode( all_settings[f])
                     setattr(self, 'vfoA_mode', mode_a)
                     setattr(self, 'vfoB_mode', mode_b)
+                elif f == "eth_settings":
+                    setattr(self, 'eth_settings', self.getEthernetSettings())
                 else:
                     setattr(self, f, all_settings[f])
 
