@@ -223,39 +223,61 @@ cmd2field = {
       "len": 1
       },
   "C2E": { 
-      "label": "vox_hang"
+      "label": "vox_hang",
+      "unpack": lambda x: (x[0]/127.0),
+      "len": 1
       },
   "C2F": { 
-      "label": "cw_keyer_mode"
+      "label": "cw_keyer_mode",
+      "unpack": self.unpack_keyer,
+      "len": 1
       },
   "C2G": { 
-      "label": "cw_weight"
+      "label": "cw_weight",
+      "unpack": lambda x: (x[0]/127.0)/2.0,
+      "len": 1
       },
   "C2H": { 
-      "label": "manual_notch"
+      "label": "manual_notch",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C2I": { 
-      "label": "manual_notch_freq"
+      "label": "manual_notch_freq",
+      "unpack": lambda x: (40*x)+20,
+      "len": 1
       },
   "C2J": { 
-      "label":  "manual_notch_width"
+      "label":  "manual_notch_width",
+      "unpack": lambda x: x*( (315-10) / (127-1) ),
+      "len": 1
       },
   "C2K": { 
-      "label":  "cw_2_xmit"
+      "label":  "cw_2_xmit",
+      "unpack": lambda x: x[0],
+      "len": 1
       },
   "C2L": { 
-      "label": "keyer_speed"
+      "label": "keyer_speed",
+      "unpack": lambda x:  int( (x * 63/127)+0.5),
+      "len": 1
       },
   "C2M": { 
-      "label": "vox"
+      "label": "vox",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C2N": { 
-      "label": "display"
+      "label": "display",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C2O": { 
-      "label": "speaker"
+      "label": "speaker",
+      "unpack": lambda x: False if x[0] == 0 else True,
+      "len": 1
       },
   "C2P": { 
-      "label": "trip_gain"
+      "label": "trip_gain" # Doesn't seem to be supported by the Omni-Vii
       },
 }

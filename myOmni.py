@@ -501,6 +501,20 @@ class MyOMNI(object):
             ret['tuned'] = True
         return ret
 
+    @staticmethod
+    def unpack_keyer(val):
+        ret = {
+            "curtis_mode_a": False,
+            "curtis_mode_b": False,
+            "keyer": False
+        }
+        if val[0] & 0x01 == 0x01:
+            ret['curtis_mode_a'] = True
+        if val[0] & 0x02 == 0x02:
+            ret['curtis_mode_b'] = True
+        if val[0] & 0x04 == 0x04:
+            ret['keyer'] = True
+        return ret
     @debug
     def getSettings(self):
         response = dict()
