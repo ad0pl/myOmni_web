@@ -10,17 +10,16 @@
 # I really like this HTML format for a UI
 # https://github.com/Akkadius/glass-isc-dhcp
 import wx
-from RigControl import RigControl
-from example_timer import RepeatedTimer
-from myOmni import MyOMNI
+from RigControl_2 import RigControl
 from myRadio import Radio
-from time import sleep
 
 class MyApp(wx.App):
     def OnInit(self):
         self.frame = RigControl(None, wx.ID_ANY, "")
-        # self.frame.text_ctrl_1
         self.SetTopWindow(self.frame)
+        self.frame.timer = wx.Timer(self.frame)
+        self.frame.timer.Start(1000)
+        self.frame.Bind(wx.EVT_TIMER, scheduledRun, self.frame.timer)
         self.frame.Show()
         return True
 
@@ -34,13 +33,13 @@ def updatePanel():
 
 
 
-def scheduledRun():
+def scheduledRun(e):
+    print("DEBUG: %s" % repr(e))
     rig.updateSettings()
     updatePanel()
 
 if __name__ == "__main__":
     rig = Radio(hostname="k8hsq.no-ip.biz", port=50020)
-    rt = RepeatedTimer(2, scheduledRun)
 
     app = MyApp(0)
     try:
@@ -48,4 +47,4 @@ if __name__ == "__main__":
     except Exception as e:
         print("Fini: %s" % str(e))
     finally:
-        rt.stop()
+        pass
