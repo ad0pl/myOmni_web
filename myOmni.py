@@ -655,7 +655,6 @@ class MyOMNI(object):
         }
         return modes.get(val, None)
 
-    @debug
     def unpackMode(self,val):
         ret = dict()
         # val will be 2 bytes in length, each byte will be an integer but in ascii
@@ -744,13 +743,13 @@ class MyOMNI(object):
          }
         return source.get(val, None)
 
-    @debug
     def unpack_au_source(self, val):
         source = self.matchAudioSource(val[0])
         if source == None:
             raise Exception('BadSource')
         return source
     @staticmethod
+
     def unpack_signal(val):
         ret = dict()
         if val[0] & 0x80 == 0x80:

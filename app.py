@@ -20,20 +20,26 @@ class MyApp(wx.App):
         self.frame.timer = wx.Timer(self.frame)
         self.frame.timer.Start(1000)
         self.frame.Bind(wx.EVT_TIMER, scheduledRun, self.frame.timer)
+        self.frame.Bind(wx.EVT_TIMER, updatePowerLevel, self.frame.power_level)
         self.frame.Show()
         return True
 
 # end of class MyApp
+
+def updatePowerLevel(e):
+    print("Updating Power Level")
+    print("RIG:", rig.power)
+    app.frame.power_level.SetValue( rig.power )
 
 def updatePanel():
     app.frame.freq_active_freq.SetValue(str(rig.vfoA))
     app.frame.freq_standby_freq.SetValue(str(rig.vfoB))
     
     app.frame.select_agc.SetValue( str(rig.agc))
-    
-    app.frame.af_level.SetValue( int(rig.volume * 100))
-    print("RIG:", rig.power)
     app.frame.power_level.SetValue( rig.power )
+
+    app.frame.af_level.SetValue( int(rig.volume * 100))
+    #app.frame.power_level.SetValue( rig.power )
     if rig.strength.get('swr', None) != None:
         app.frame.swr_level.SetValue ( rig.strength['swr'] )
     if rig.strength.get('dbS9rel', None) != None:
