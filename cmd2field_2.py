@@ -31,7 +31,7 @@ cmd2field = {
       },
   "K": { 
       "label": "noise",
-      "unpack": self.unpack_noise,
+      "unpack": unpack_noise,
       "len": 3
       },
   "L": {

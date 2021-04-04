@@ -26,11 +26,33 @@ class MyApp(wx.App):
 # end of class MyApp
 
 def updatePanel():
-    app.frame.vfoA.SetValue(str(rig.vfoA))
-    app.frame.vfoB.SetValue(str(rig.vfoB))
+    app.frame.freq_active_freq.SetValue(str(rig.vfoA))
+    app.frame.freq_standby_freq.SetValue(str(rig.vfoB))
+    
     app.frame.select_agc.SetValue( str(rig.agc))
-    app.frame.af_level.SetValue( str(rig.volume))
+    
+    app.frame.af_level.SetValue( int(rig.volume * 100))
+    print("RIG:", rig.power)
+    app.frame.power_level.SetValue( rig.power )
+    if rig.strength.get('swr', None) != None:
+        app.frame.swr_level.SetValue ( rig.strength['swr'] )
+    if rig.strength.get('dbS9rel', None) != None:
+        app.frame.s_meter_level.SetValue ( rig.strength['dbS9rel'] )
 
+    if rig.radio_mode['vfoA_mode'] == "AM":
+        app.frame.mode_am.SetValue(True)
+        app.frame.mode_usb.SetValue(False)
+        app.frame.mode_lsb.SetValue(False)
+        app.frame.mode_cw.SetValue(False)
+        app.frame.mode_fm.SetValue(False)
+        app.frame.mode_cwr.SetValue(False)
+    elif rig.radio_mode['vfoA_mode'] == "USB":
+        app.frame.mode_am.SetValue(False)
+        app.frame.mode_usb.SetValue(True)
+        app.frame.mode_lsb.SetValue(False)
+        app.frame.mode_cw.SetValue(False)
+        app.frame.mode_fm.SetValue(False)
+        app.frame.mode_cwr.SetValue(False)
 
 
 def scheduledRun(e):

@@ -34,15 +34,13 @@ class Radio(object):
         return { 'mac': mac_addr, 'rip': rip_in_use, 'ip': rip_ip, 'compression': compression_level }
 
     def updateSettings(self):
-        all_settings = self.rig.getSettings()
+        all_settings = self.rig.queryAll()
         for (f, c) in field2cmd.items():
             if all_settings.get(f, None) != None:
                 if f == "radio_mode":
-                    mode_a, mode_b = self.rig.unpackMode( all_settings[f])
-                    setattr(self, 'vfoA_mode', mode_a)
-                    setattr(self, 'vfoB_mode', mode_b)
-                elif f == "eth_settings":
-                    setattr(self, 'eth_settings', self.getEthernetSettings())
+                    #mode_a, mode_b = self.rig.unpackMode( all_settings[f])
+                    setattr(self, 'vfoA_mode', all_settings[f]['vfoA_mode'])
+                    setattr(self, 'vfoB_mode', all_settings[f]['vfoB_mode'])
                 else:
                     setattr(self, f, all_settings[f])
 

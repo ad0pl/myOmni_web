@@ -34,13 +34,13 @@ class RigControl(wx.Frame):
         meter_levels = wx.BoxSizer(wx.VERTICAL)
         top_col1.Add(meter_levels, 1, wx.EXPAND, 0)
 
-        self.acl_level = wx.Gauge(self.panel_1, wx.ID_ANY, 10)
+        self.acl_level = wx.Gauge(self.panel_1, wx.ID_ANY, 100)
         meter_levels.Add(self.acl_level, 0, wx.ALL | wx.EXPAND, 6)
 
-        self.power_level = wx.Gauge(self.panel_1, wx.ID_ANY, 10)
+        self.power_level = wx.Gauge(self.panel_1, wx.ID_ANY, 100)
         meter_levels.Add(self.power_level, 0, wx.EXPAND, 0)
 
-        self.swr_level = wx.Gauge(self.panel_1, wx.ID_ANY, 10)
+        self.swr_level = wx.Gauge(self.panel_1, wx.ID_ANY, 100)
         meter_levels.Add(self.swr_level, 0, wx.EXPAND, 0)
 
         self.empty_box_01 = wx.TextCtrl(self.panel_1, wx.ID_ANY, "This box is left empty on purpose", style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_WORDWRAP)
@@ -160,10 +160,10 @@ class RigControl(wx.Frame):
         bottom_col1 = wx.BoxSizer(wx.VERTICAL)
         bottom.Add(bottom_col1, 1, wx.EXPAND, 0)
 
-        self.af_level = wx.Gauge(self.panel_1, wx.ID_ANY, 10)
+        self.af_level = wx.Gauge(self.panel_1, wx.ID_ANY, 100)
         bottom_col1.Add(self.af_level, 0, wx.EXPAND, 0)
 
-        self.agc_level = wx.Gauge(self.panel_1, wx.ID_ANY, 10)
+        self.agc_level = wx.Gauge(self.panel_1, wx.ID_ANY, 100)
         bottom_col1.Add(self.agc_level, 0, wx.EXPAND, 0)
 
         self.nr_level = wx.Gauge(self.panel_1, wx.ID_ANY, 10)

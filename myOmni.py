@@ -2,7 +2,7 @@ import socket   # for sockets
 import struct
 import functools
 import math
-from cmd2field import cmd2field
+
 
 # This is called a declarator, it gets called for any function that has the
 #    the @debug on the line prior to the function definition.
@@ -90,8 +90,7 @@ class MyOMNI(object):
     and
     http://www.tentec.com/wp-content/uploads/2016/05/tt_588_program_ref_v1.009.pdf
     """
-  # For python classes, the __init__ method/function is always called when a new
-  #   Object is created
+
     @debug
     def __init__(self, hostname="omni", port=50020):
         """The init method can take named parameters with defaults as follows
@@ -105,7 +104,300 @@ class MyOMNI(object):
         self.startcmd = "09"
         # A couple more elements to hold our destination
         self.destination = (hostname, port)
-        print ('Trace 22')
+        self.cmd2field = {
+      "A": {
+          "label": "vfoA",
+          "unpack": lambda x: struct.unpack("!L", x)[0],
+          "len": 4
+          },
+      "B": { 
+          "label": "vfoB",
+          "unpack": lambda x: struct.unpack("!L", x)[0],
+          "len": 4
+          },
+      "G": { 
+          "label": "agc",
+          "unpack": lambda x: AGCMode(x[0]-ord('0')),
+          "len": 1
+          },
+      "H": { 
+          "label": "sql",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "I": { 
+          "label": "rfgain",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "J": { 
+          "label": "att",
+          "unpack": lambda x: (x[0]-ord('0'))*6,
+          "len": 1
+          },
+      "K": { 
+          "label": "noise",
+          "unpack": self.unpack_noise,
+          "len": 3
+          },
+      "L": {
+         "label": "rit_xit",
+          "unpack": self.unpack_ritxit,
+          "len": 3
+         },
+      "M": { 
+          "label": "radio_mode",
+          "unpack": self.unpackMode,
+          "len": 2
+          },
+      "N": { 
+          "label": "split_state",
+          "unpack": lambda x: "Off" if x[0] == 0 else "On",
+          "len": 1
+          },
+      "P": { 
+          "label": "passband",
+          "unpack": lambda x: struct.unpack("!H", x)[0],
+          "len": 2
+          },
+      "U": { 
+          "label": "volume",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "W": { 
+          "label": "rx_filter",
+          "unpack": self.unpack_filter,
+          "len": 1
+          },
+      "S": { 
+          "label": "strength",
+          "unpack": self.unpack_signal,
+          "len": 4
+          },
+      "F": { 
+          "label": "strength",
+          "unpack": self.unpack_signal,
+          "len": 4
+          },
+      "C1A": { 
+          "label": "audio_source",
+          "unpack": self.unpack_au_source,
+          "len": 1
+          },
+      "C1B": { 
+          "label": "keyloop",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "T": { 
+          "label": "eth_settings",
+          "unpack": self.unpack_eth,
+          "len": 18
+          },
+      "C1C": { 
+          "label": "cw_time",
+          "unpack": lambda x: x[0] + 3,
+          "len": 1
+          },
+      "C1D": { 
+          "label": "mic_gain",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1E": { 
+          "label": "line_gain",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1F": { 
+          "label": "speech_proc",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1G": { 
+          "label": "ctcss_tone", # Who's going to use this rig for FM?
+          "unpack": lambda x: x[0],
+          "len": 1
+          },
+      "C1H": { 
+          "label": "rx_eq",
+          "unpack": lambda x: int( (x[0]-1)/3.097560975 ) - 20,
+          "len": 1
+          },
+      "C1I": { 
+          "label": "tx_eq",
+          "unpack": lambda x: int( (x[0]-1)/3.097560975 ) - 20,
+          "len": 1
+          },
+      "C1J": { 
+          "label": "xmit_rolloff",
+          "unpack": lambda x: (x[0] * 10) + 70,
+          "len": 1
+          },
+      "C1K": { 
+          "label": "t_r_delay",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1L": { 
+          "label": "sidetone_freq",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1M": { 
+          "label": "cw_delay",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1N": { 
+          "label": "xmit_enable",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C1O": { 
+          "label": "sideband_bw",
+          "unpack": lambda x: 2500 if x[0] == 8 else 4000-(x[0] * 200) if x[0] < 8 else 4000-((x[0]-1)*200),
+          "len": 1
+          },
+      "C1P": { 
+          "label": "auto_tuner",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C1Q": { 
+          "label": "sidetone_vol",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1R": { 
+          "label": "spot_vol",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1S": {
+         "label": "fsk_mark",
+          "unpack": lambda x: x[0],
+          "len": 1
+         },
+      "C1T": { 
+          "label": "if_filter",
+          "unpack": self.unpack_if,
+          "len": 2
+          },
+      "C1U": { 
+          "label": "if_filter_enable",
+          "unpack": self.unpack_if_filter_enable,
+          "len": 1
+          },
+      "C1V": { 
+          "label": "antenna",
+          "unpack": lambda x: x[0],
+          "len": 1
+          },
+      "C1W": { 
+          "label": "monitor",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C1X": { 
+          "label": "power",
+          "unpack": lambda x: int( ((x[0]/127.0)*100)+0.5 ), # we can get the fwd/rev power from ?S, ignore it from here
+          "len": 3
+          },
+      "C1Y": { 
+          "label": "spot",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C1Z": { 
+          "label": "preamp",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C2A": { 
+          "label": "tuner",
+          "unpack": self.unpack_tune_state,
+          "len": 1
+          },
+      "C2B": { 
+          "label": "split_state2",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C2C": { 
+          "label": "vox_trip",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C2D": { 
+          "label": "anti_vox",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C2E": { 
+          "label": "vox_hang",
+          "unpack": lambda x: (x[0]/127.0),
+          "len": 1
+          },
+      "C2F": { 
+          "label": "cw_keyer_mode",
+          "unpack": self.unpack_keyer,
+          "len": 1
+          },
+      "C2G": { 
+          "label": "cw_weight",
+          "unpack": lambda x: (x[0]/127.0)/2.0,
+          "len": 1
+          },
+      "C2H": { 
+          "label": "manual_notch",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C2I": { 
+          "label": "manual_notch_freq",
+          "unpack": lambda x: (40*x[0])+20,
+          "len": 1
+          },
+      "C2J": { 
+          "label":  "manual_notch_width",
+          "unpack": lambda x: x[0]*( (315-10) / (127-1) ),
+          "len": 1
+          },
+      "C2K": { 
+          "label":  "cw_2_xmit",
+          "unpack": lambda x: x[0],
+          "len": 1
+          },
+      "C2L": { 
+          "label": "keyer_speed",
+          "unpack": lambda x:  int( (x[0] * 63/127)+0.5),
+          "len": 1
+          },
+      "C2M": { 
+          "label": "vox",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C2N": { 
+          "label": "display",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C2O": { 
+          "label": "speaker",
+          "unpack": lambda x: False if x[0] == 0 else True,
+          "len": 1
+          },
+      "C2P": { 
+          "label": "trip_gain" # Doesn't seem to be supported by the Omni-Vii
+          },
+      "VER": {
+          "label": "version"
+      }
+        }
+
 
     @debug
     def sendQuery(self, msg):
@@ -159,8 +451,8 @@ class MyOMNI(object):
             elif chr( buffer[0] ) == 'C':
                 # The fields that begin with a C are 3 characters in length
                 field = buffer[0:3].decode()
-                data_start = 4
-                data_len = cmd2field[field].get('len', -1)
+                data_start = 3
+                data_len = self.cmd2field[field].get('len', -1)
             elif chr( buffer[0] ) == "V":
                 # Version string is kinda tricky since it's terminated by a null
                 field = buffer[0:3].decode()
@@ -174,19 +466,31 @@ class MyOMNI(object):
             else:
                 field = chr( buffer[0] )
                 data_start = 1
-                data_len = cmd2field[field].get('len', -1)
+                data_len = self.cmd2field[field].get('len', -1)
 
             if data_len > 0:
                 # Validate we are properly terminated
+                #print("DEBUG: data_len: %d" % data_len)
+
                 data_end   = data_start + data_len
                 if buffer[data_end] != ord('\r'):
+                    print("DEBUG:BADDATA: (%s)(%d:%d): " % (field, data_len, data_end), repr(buffer[data_end]))
                     raise Exception('BadData')
                 data = buffer[ data_start:data_end ]
-                value = cmd2field[ field ]["unpack"]( data )
+                value = self.cmd2field[ field ]["unpack"]( data )
                 # Move to the next field
                 buffer = buffer[data_end+1:]
             if field != None:
-                response[field] = value
+                #print("DEBUG: %s" % field)
+                if field == 'U':
+                    print("DEBUG: VOLUME")
+                if field == 'W':
+                    print("DEBUG: RX FILTER")
+                if field == 'T':
+                    print("DEBUG: ETHERNET")
+                label = self.cmd2field[field]['label']
+                response[label] = value
+            #print("DEBUG: buffer_len: %d" % len(buffer))
         return response
 
     
@@ -335,7 +639,7 @@ class MyOMNI(object):
         elif val[0] == 2:
             ret["xit"] = (val[2] * 256) | val[3]
         else:
-            x = (val[2] * 256) | val[3]
+            x = (val[1] * 256) | val[2]
             ret = { "xit": x, "rit": x }
         return ret
 
@@ -351,8 +655,8 @@ class MyOMNI(object):
         }
         return modes.get(val, None)
 
-    @staticmethod
-    def unpackMode(val):
+    @debug
+    def unpackMode(self,val):
         ret = dict()
         # val will be 2 bytes in length, each byte will be an integer but in ascii
         # (x-ord('0') for x in val) => for each byte in val, convert char to integer
@@ -361,7 +665,7 @@ class MyOMNI(object):
             # 'k' will either be vfoA_mode or vfoB_mode
             # 'v' will be the integer value of either the first or second byte
             # Lookup the coresponding mode for the value of the 'v' byte
-            mode = radioMode(v)
+            mode = self.radioMode(v)
             # Make sure it's a valid mode (i.e. a number between 0-5
             if v == None:
                 raise Exception("BadMode")
@@ -410,11 +714,10 @@ class MyOMNI(object):
             36: 250,
             37: 200
         }
-        return filters.get(val, None)
+        return filters.get(width, None)
 
-    @staticmethod
-    def unpack_filter(val):
-        filter = matchFilter(val[0])
+    def unpack_filter(self, val):
+        filter = self.matchFilter(val[0])
         if filter == None:
             raise Exception('BadFilter')
         return filter
@@ -441,9 +744,9 @@ class MyOMNI(object):
          }
         return source.get(val, None)
 
-    @staticmethod
-    def unpack_au_source(val):
-        source = matchAudioSource(val[0])
+    @debug
+    def unpack_au_source(self, val):
+        source = self.matchAudioSource(val[0])
         if source == None:
             raise Exception('BadSource')
         return source
@@ -461,8 +764,8 @@ class MyOMNI(object):
             ret['dbm'] = dbW + 73
         else:
             # Receiving
-            s_meter = int( reply[0:2].decode() )
-            db_over = int( reply[2:3].decode() )
+            s_meter = int( val[0:2].decode() )
+            db_over = int( val[2:3].decode() )
             ret['dbS9rel'] = (s_meter - 9) * 6 # convert S meter to dBS9 relative
         return ret
 
@@ -515,15 +818,29 @@ class MyOMNI(object):
         if val[0] & 0x04 == 0x04:
             ret['keyer'] = True
         return ret
+    
     @debug
     def getSettings(self):
         response = dict()
-        all_settings = self.getAll()
+        all_settings = self.queryAll()
         for (c, value) in all_settings.items():
-            if cmd2field.get(c, None) != None:
-                f = cmd2field[c]
-                response[f] = value
+#            if self.cmd2field.get(c, None) != None:
+#                f = self.cmd2field[c]
+#                response[f] = value
+            pass
+        response = all_settings
         return response
+
+    @debug
+    def queryAll(self):
+        reply = dict()
+        try:
+            self.sendQuery('*')
+            reply = self.newRecv()
+        except Exception as e:
+            print("ERROR: queryAll: %s" % str(e))
+            raise e
+        return reply
 
     @debug
     def getAll(self):
@@ -707,3 +1024,5 @@ class MyOMNI(object):
             else:
                 raise Exception('UnknownCMD_%s' % repr(field))
         return resp
+
+
