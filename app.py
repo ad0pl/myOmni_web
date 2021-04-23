@@ -11,6 +11,7 @@
 # https://github.com/Akkadius/glass-isc-dhcp
 import wx
 from RigControl_2 import RigControl
+#from RigControl_2_C import RigControl
 from myRadio import Radio
 
 class MyApp(wx.App):
